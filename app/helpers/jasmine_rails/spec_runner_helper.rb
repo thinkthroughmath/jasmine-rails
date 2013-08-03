@@ -22,6 +22,7 @@ module JasmineRails
       if params[:console]
         files << 'jasmine-console-reporter.js'
       end
+      files << 'jasmine-junit-reporter.js'
       files << 'jasmine-boot.js'
       files << 'jasmine-specs.js'
       files

@@ -1,7 +1,33 @@
+require 'open3'
+
 namespace :spec do
   def run_cmd(cmd)
     puts "$ #{cmd}"
-    unless system(cmd)
+    stdout = ""
+    stderr = ""
+    exit_status = Open3.popen3(cmd) {|i, o, e, t|
+      stdout = o.gets(nil)
+      stderr = e.gets(nil)
+      t.value.to_i
+    }
+    if exit_status == 0
+      console_report, junit_report = stdout.split("ConsoleReporter finished")
+      puts console_report
+
+      if ENV["JENKINS"]
+        report_dir = File.join(Rails.root, 'test', 'reports', ENV["TEST_TYPE"])
+        FileUtils.mkdir_p(report_dir)
+        junit_report.strip.split("\n\n").each do |report|
+          lines = report.split("\n")
+          filename = lines.shift
+          File.open(File.join(report_dir, filename), 'w') do |f|
+            f.puts lines.join("\n")
+          end
+        end
+      end
+
+    else
+      puts stderr
       raise "Error executing command: #{cmd}"
     end
   end
