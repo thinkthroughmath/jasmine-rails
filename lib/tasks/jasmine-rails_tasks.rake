@@ -10,25 +10,23 @@ namespace :spec do
       stderr = e.gets(nil)
       t.value.to_i
     }
-    if exit_status == 0
-      console_report, junit_report = stdout.split("ConsoleReporter finished")
-      puts console_report
+    if stderr
+      raise "Error executing command: #{cmd}\n#{stderr}"
+    end
 
-      if ENV["JENKINS"]
-        report_dir = File.join(Rails.root, 'test', 'reports', ENV["TEST_TYPE"])
-        FileUtils.mkdir_p(report_dir)
-        junit_report.strip.split("\n\n").each do |report|
-          lines = report.split("\n")
-          filename = lines.shift
-          File.open(File.join(report_dir, filename), 'w') do |f|
-            f.puts lines.join("\n")
-          end
+    console_report, junit_report = stdout.split("ConsoleReporter finished")
+    puts console_report
+
+    if ENV["JENKINS"]
+      report_dir = File.join(Rails.root, 'test', 'reports', ENV["TEST_TYPE"])
+      FileUtils.mkdir_p(report_dir)
+      junit_report.strip.split("\n\n").each do |report|
+        lines = report.split("\n")
+        filename = lines.shift
+        File.open(File.join(report_dir, filename), 'w') do |f|
+          f.puts lines.join("\n")
         end
       end
-
-    else
-      puts stderr
-      raise "Error executing command: #{cmd}"
     end
   end
 
@@ -52,8 +50,11 @@ namespace :spec do
     runner_path = Rails.root.join('spec/tmp/runner.html')
     File.open(runner_path, 'w') {|f| f << html.gsub('/assets', './assets')}
 
-    run_cmd %{phantomjs "#{File.join(File.dirname(__FILE__), 'runner.js')}" "file://#{runner_path.to_s}?spec=#{spec_filter}"}
+    exit_status = run_cmd %{phantomjs "#{File.join(File.dirname(__FILE__), 'runner.js')}" "file://#{runner_path.to_s}?spec=#{spec_filter}"}
     Rails.application.config.assets.debug = original_debug_setting
+    unless exit_status == 0
+      raise "Non-zero exit status from running tests"
+    end
   end
 
   # alias
