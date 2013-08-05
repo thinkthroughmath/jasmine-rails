@@ -28,6 +28,8 @@ namespace :spec do
         end
       end
     end
+
+    exit_status
   end
 
   desc "run test with phantomjs"
@@ -52,6 +54,7 @@ namespace :spec do
 
     exit_status = run_cmd %{phantomjs "#{File.join(File.dirname(__FILE__), 'runner.js')}" "file://#{runner_path.to_s}?spec=#{spec_filter}"}
     Rails.application.config.assets.debug = original_debug_setting
+
     unless exit_status == 0
       raise "Non-zero exit status from running tests"
     end
